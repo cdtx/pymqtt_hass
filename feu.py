@@ -3,22 +3,17 @@ import sys, os
 import re
 import argparse
 import json
+import random
 import uuid
 import logging
+
+from paho.mqtt.client import Client
+
+import hass
 
 # https://stackoverflow.com/questions/7016056/python-logging-not-outputting-anything
 logging.basicConfig(level=logging.NOTSET)
 logger = logging.getLogger('pymqtt_hass')
-
-from paho.mqtt.client import Client
-from hass import Device
-
-def get_device_topic(data):
-    return '/'.join([
-        data['device']['manufacturer'],
-        data['device']['model'],
-        data['device']['identifiers'],
-    ])
 
 def call_config(**kwargs):
     ''' Resolve and print the configuration template
@@ -39,7 +34,7 @@ def call_config(**kwargs):
     jdata['device']['identifiers'] = device_id
 
     # Now, generate the base mqtt topic
-    device_topic = get_device_topic(jdata)
+    device_topic = hass.get_device_topic(jdata)
 
     device_data = {
         'device_id':device_id, 
@@ -71,13 +66,7 @@ def on_connect(*args, **kwargs):
     logger.debug('on_connect')
 
 def call_run(**kwargs):
-    config_file_path = os.path.expanduser(kwargs['config'])
-    if not os.path.exists(config_file_path):
-        raise FileNotFoundError(config_file_path)
-
-    jdata = None
-    with open(config_file_path, 'r') as fin:
-        jdata = json.load(fin)
+    hass_config = os.path.expanduser(kwargs['hass_config'])
 
     client = Client()
     # Set the client options
@@ -88,16 +77,18 @@ def call_run(**kwargs):
     client.connect('192.168.1.19')
     client.loop()
 
-    device = Device(client, jdata)
+    device = hass.Device(client, hass_config)
     device.send_discovery()
     client.loop()
 
     # Send sensor value
+    logger.debug('Send sensor value')
     topic = '/'.join([
-        get_device_topic(jdata),
+        device.get_device_topic(),
         'value'
     ])
-    payload = uuid.uuid4().int
+
+    payload = int(10000 * random.random())
 
     logger.debug('Publish [{}] on [{}]'.format(payload, topic))
     client.publish(topic, payload)
@@ -117,7 +108,7 @@ if __name__ == '__main__':
     parser_config.set_defaults(func=call_config)
 
     parser_run = subparsers.add_parser('run')
-    parser_run.add_argument('config')
+    parser_run.add_argument('hass_config')
     parser_run.set_defaults(func=call_run)
 
     args = main_parser.parse_args()

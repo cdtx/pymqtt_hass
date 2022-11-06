@@ -4,6 +4,13 @@ import json
 
 logger = logging.getLogger('pymqtt_hass')
 
+def get_device_topic(data):
+    return '/'.join([
+        data['manufacturer'],
+        data['model'],
+        data['identifiers'],
+    ])
+
 class Entity:
     discovery_prefix = 'homeassistant'
 
@@ -29,10 +36,21 @@ class Entity:
         self.client.publish(topic, payload)
 
 class Device:
-    def __init__(self, mqtt_client, data):
+    def __init__(self, mqtt_client, config_file):
+
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(config_file)
+
+        jdata = None
+        with open(config_file, 'r') as fin:
+            data = json.load(fin)
+
         self.client = mqtt_client
         self.config = data['device']
         self.entities = [Entity(mqtt_client, d) for d in data['entities']]
+
+    def get_device_topic(self):
+        return get_device_topic(self.config)
 
     def send_discovery(self):
         logger.debug('Send device discovery')
