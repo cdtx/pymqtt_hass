@@ -9,7 +9,7 @@ import logging
 
 from paho.mqtt.client import Client
 
-import hass
+from pymqtt_hass.items import Device
 
 # https://stackoverflow.com/questions/7016056/python-logging-not-outputting-anything
 logging.basicConfig(level=logging.NOTSET)
@@ -31,7 +31,7 @@ def run(**kwargs):
     client.connect('192.168.1.19')
     client.loop()
 
-    device = hass.Device(client, hass_config)
+    device = Device(client, hass_config)
     device.send_discovery()
     client.loop()
 
@@ -56,5 +56,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('hass_config')
 
-    args = main_parser.parse_args()
+    args = parser.parse_args()
     run(**vars(args))
