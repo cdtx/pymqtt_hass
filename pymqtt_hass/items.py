@@ -37,7 +37,7 @@ class Entity:
 
 class Device:
     def __init__(self, mqtt_client, config_file):
-
+        config_file = os.path.expanduser(config_file)
         if not os.path.exists(config_file):
             raise FileNotFoundError(config_file)
 

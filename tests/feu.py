@@ -14,14 +14,11 @@ from pymqtt_hass.items import Device
 # https://stackoverflow.com/questions/7016056/python-logging-not-outputting-anything
 logging.basicConfig(level=logging.NOTSET)
 logger = logging.getLogger('pymqtt_hass')
-
         
 def on_connect(*args, **kwargs):
     logger.debug('on_connect')
 
 def run(**kwargs):
-    hass_config = os.path.expanduser(kwargs['hass_config'])
-
     client = Client()
     # Set the client options
     client.on_connect = on_connect
@@ -31,7 +28,7 @@ def run(**kwargs):
     client.connect('192.168.1.19')
     client.loop()
 
-    device = Device(client, hass_config)
+    device = Device(client, kwargs['hass_config'])
     device.send_discovery()
     client.loop()
 
