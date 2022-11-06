@@ -1,0 +1,15 @@
+{
+    "device": {
+        "identifiers":"{device_id}",
+        "manufacturer":"cdtx",
+        "model":"pymqtt_test_device"
+    },
+    "entities": [
+        {
+            "unique_id":"{entity_id}",
+            "component":"sensor",
+            "name":"",
+            "state_topic":"{device_topic}/value"
+        }
+    ]
+}
