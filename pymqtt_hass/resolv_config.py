@@ -58,7 +58,7 @@ def run(**kwargs):
             if isinstance(value, str):
                 entity[key] = value.format(**device_data, entity_id=entity_id)
 
-        print(json.dumps(jdata, indent=4))
+    print(json.dumps(jdata, indent=4))
 
 def main():
     logger.setLevel('DEBUG')
