@@ -13,10 +13,98 @@ from .items import get_device_topic
 logging.basicConfig(level=logging.NOTSET)
 logger = logging.getLogger('pymqtt_hass')
 
+def print_json_file(jdata):
+    print(json.dumps(jdata, indent=4))
+
+def print_h_file(jdata):
+    header_content = [
+        '#ifndef _HASS_ENTITIES_H_',
+        '#define _HASS_ENTITIES_H_',
+        '',
+    ]
+
+    # Define the base device topic
+    device_topic_name = 'HASS_DEVICE_TOPIC'
+    device_topic_value = get_device_topic(jdata['device'])
+    header_content.append(
+        '#define\t{}\t{}'.format(
+            device_topic_name,
+            '"{}"'.format(device_topic_value),
+        )
+    )
+    
+    header_content.append('')
+
+    # Define for all entities:
+    # - publish topic
+    # - discovery topic and data
+    for entity in jdata.get('entities', {}):
+        # Entity's publish topic
+        publish_topic_name = '{}_{}_{}'.format(
+            'HASS_ENTITY',
+            entity.get('name', 'unknown').upper(),
+            'PUBLISH_TOPIC',
+        )
+        publish_topic_value = entity['state_topic']
+        header_content.append(
+            '#define\t{}\t{}'.format(
+                publish_topic_name,
+                '"{}"'.format(publish_topic_value),
+            )
+        )
+
+        # Entity's discovery topic
+        discovery_topic_name = '{}_{}_{}'.format(
+            'HASS_ENTITY',
+            entity.get('name', 'unknown').upper(),
+            'DISCOVERY_TOPIC',
+        )
+        discovery_topic_value = '/'.join([
+            'homeassistant',
+            entity['component'],
+            entity['unique_id'],
+            'config',
+        ])
+        header_content.append(
+            '#define\t{}\t{}'.format(
+                discovery_topic_name,
+                '"{}"'.format(discovery_topic_value),
+            )
+        )
+
+        # Entity's discovery data
+        discovery_data_name = '{}_{}_{}'.format(
+            'HASS_ENTITY',
+            entity.get('name', 'unknown').upper(),
+            'DISCOVERY_DATA',
+        )
+
+        discovery_data_value = json.dumps({
+            **entity,
+            'device':jdata['device'],
+        }).replace(' ','').replace('"', '\\"')
+
+        header_content.append(
+            '#define\t{}\t{}'.format(
+                discovery_data_name,
+                '"{}"'.format(discovery_data_value),
+            )
+        )
+        header_content.append('')
+
+    header_content += [
+        '',
+        '#endif'
+    ]
+
+    print("\n".join(header_content))
+
+
 def run(**kwargs):
     ''' Resolve and print the configuration template
     '''
     template = os.path.expanduser(kwargs['template'])
+    output_type = kwargs['output']
     if not os.path.exists(template):
         raise FileNotFoundError(template)
 
@@ -58,13 +146,17 @@ def run(**kwargs):
             if isinstance(value, str):
                 entity[key] = value.format(**device_data, entity_id=entity_id)
 
-    print(json.dumps(jdata, indent=4))
+    if output_type == 'json':
+        print_json_file(jdata)
+    elif output_type == 'h':
+        print_h_file(jdata)
 
 def main():
     logger.setLevel('DEBUG')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('template')
+    parser.add_argument('template', help='Path to the json template file')
+    parser.add_argument('output', choices=['json', 'h'], help='Output format')
     args = parser.parse_args()
 
     run(**vars(args))
