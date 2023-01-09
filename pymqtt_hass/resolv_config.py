@@ -82,7 +82,7 @@ def print_h_file(jdata):
         discovery_data_value = json.dumps({
             **entity,
             'device':jdata['device'],
-        }).replace(' ','').replace('"', '\\"')
+        }).replace('"', '\\"')
 
         header_content.append(
             '#define\t{}\t{}'.format(
