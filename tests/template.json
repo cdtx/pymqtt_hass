@@ -8,7 +8,7 @@
         {
             "unique_id":"{entity_id}",
             "component":"sensor",
-            "name":"",
+            "name":"sensor",
             "state_topic":"{device_topic}/value"
         }
     ]

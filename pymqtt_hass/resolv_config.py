@@ -16,6 +16,65 @@ logger = logging.getLogger('pymqtt_hass')
 def print_json_file(jdata):
     print(json.dumps(jdata, indent=4))
 
+def create_fs(jdata):
+    ''' Create filesystem with files: 
+
+        - device_topic
+        - <entity_name>_pt  -> publish topic
+        - <entity_name>_dt  -> discovery_topic
+        - <entity_name>_dd  -> discovery_data
+        
+
+    '''
+
+    # device_topic
+    device_topic_file_name = 'device_topic'
+    device_topic_value = get_device_topic(jdata['device'])
+    with open(f'{device_topic_file_name}', 'w') as fout:
+        fout.write(device_topic_value)
+    
+    # Define for all entities:
+    # - publish topic
+    # - discovery topic and data
+    for entity in jdata.get('entities', {}):
+        # Entity's publish topic
+        publish_topic_file_name = '{}_{}'.format(
+            entity.get('name', 'unknown').upper(),
+            'PT',
+        )
+        publish_topic_value = entity['state_topic']
+        with open(f'{publish_topic_file_name}', 'w') as fout:
+            fout.write(publish_topic_value)
+
+        # Entity's discovery topic
+        discovery_topic_file_name = '{}_{}'.format(
+            entity.get('name', 'unknown').upper(),
+            'DT',
+        )
+        discovery_topic_value = '/'.join([
+            'homeassistant',
+            entity['component'],
+            entity['unique_id'],
+            'config',
+        ])
+        with open(f'{discovery_topic_file_name}', 'w') as fout:
+            fout.write(discovery_topic_value)
+
+        # Entity's discovery data
+        discovery_data_file_name = '{}_{}'.format(
+            entity.get('name', 'unknown').upper(),
+            'DD',
+        )
+
+        discovery_data_value = json.dumps({
+            **entity,
+            'device':jdata['device'],
+        }).replace('"', '\\"')
+        with open(f'{discovery_data_file_name}', 'w') as fout:
+            fout.write(discovery_data_value)
+
+
+
 def print_h_file(jdata):
     header_content = [
         '#ifndef _HASS_ENTITIES_H_',
@@ -146,17 +205,20 @@ def run(**kwargs):
             if isinstance(value, str):
                 entity[key] = value.format(**device_data, entity_id=entity_id)
 
-    if output_type == 'json':
-        print_json_file(jdata)
-    elif output_type == 'h':
-        print_h_file(jdata)
+    # Call function according to output_type
+    {
+        'json': print_json_file,
+        'fs': create_fs,
+        'h': print_h_file,
+    }[output_type](jdata)
+
 
 def main():
     logger.setLevel('DEBUG')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('template', help='Path to the json template file')
-    parser.add_argument('output', choices=['json', 'h'], help='Output format')
+    parser.add_argument('output', choices=['json', 'fs', 'h'], help='Output format')
     args = parser.parse_args()
 
     run(**vars(args))
