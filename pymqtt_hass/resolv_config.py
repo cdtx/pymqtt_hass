@@ -43,7 +43,7 @@ def create_fs(jdata):
             'PT',
         )
         publish_topic_value = entity['state_topic']
-        with open(f'{publish_topic_file_name}', 'w') as fout:
+        with open(f'{publish_topic_file_name}', 'w', encoding='ascii') as fout:
             fout.write(publish_topic_value)
 
         # Entity's discovery topic
@@ -57,7 +57,7 @@ def create_fs(jdata):
             entity['unique_id'],
             'config',
         ])
-        with open(f'{discovery_topic_file_name}', 'w') as fout:
+        with open(f'{discovery_topic_file_name}', 'w', encoding='ascii') as fout:
             fout.write(discovery_topic_value)
 
         # Entity's discovery data
@@ -69,8 +69,8 @@ def create_fs(jdata):
         discovery_data_value = json.dumps({
             **entity,
             'device':jdata['device'],
-        }).replace('"', '\\"')
-        with open(f'{discovery_data_file_name}', 'w') as fout:
+        })
+        with open(f'{discovery_data_file_name}', 'w', encoding='ascii') as fout:
             fout.write(discovery_data_value)
 
 
