@@ -18,8 +18,7 @@ class Entity:
         self.client = mqtt_client
         self.config = data
 
-    def send_discovery(self, device):
-        logger.debug('Send entity discovery {}'.format(self.config['unique_id']))
+    def discovery_items(self, device):
         topic = '/'.join([
             self.discovery_prefix,
             self.config['component'],
@@ -32,6 +31,15 @@ class Entity:
         payload = json.dumps({**self.config, 'device':device})
         logger.debug('Computed payload :')
         logger.debug(payload)
+
+        return (topic, payload)
+
+
+    def send_discovery(self, device):
+        ''' deprecated, since use may be able to choose it's mqtt client '''
+        logger.debug('Send entity discovery {}'.format(self.config['unique_id']))
+
+        topic, payload = self.discovery_items(device)
 
         self.client.publish(topic, payload)
 
@@ -51,6 +59,10 @@ class Device:
 
     def get_device_topic(self):
         return get_device_topic(self.config)
+
+    def discovery_items(self):
+        for entity in self.entities:
+            yield entity.discovery_items(self.config)
 
     def send_discovery(self):
         logger.debug('Send device discovery')
